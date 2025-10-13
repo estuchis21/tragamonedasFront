@@ -1,31 +1,38 @@
-// src/services/api.js
 import axios from "axios";
 
-// Crear instancia base de axios
-const api = axios.create({
-  baseURL: "http://localhost:3000/auth", // 👈 Cambiá esto si tu backend corre en otra URL
+const apiAuth = axios.create({
+  baseURL: "http://localhost:3000/auth", // backend auth
 });
 
-// =========================
-// Registro de usuario
-// =========================
+// Registro
 export const registroUsuario = async (nombres, dni) => {
   try {
-    const res = await api.post("/registro", { nombres, dni });
+    const res = await apiAuth.post("/registro", { nombres, dni });
     return res.data;
-  } catch (error) {
-    throw error.response?.data || { success: false, message: "Error en el registro" };
+  } catch (err) {
+    throw err.response?.data || { success: false, message: "Error en registro" };
   }
 };
 
-// =========================
-// Login de usuario
-// =========================
+// Login
 export const loginUsuario = async (dni) => {
   try {
-    const res = await api.post("/login", { dni });
+    const res = await apiAuth.post("/login", { dni });
     return res.data;
-  } catch (error) {
-    throw error.response?.data || { success: false, message: "Error al iniciar sesión" };
+  } catch (err) {
+    throw err.response?.data || { success: false, message: "Error al iniciar sesión" };
+  }
+};
+
+// Obtener usuario por ID
+export const obtenerUsuario = async (token, id_usuario) => {
+  if (!id_usuario) throw new Error("ID de usuario no encontrado");
+  try {
+    const res = await apiAuth.get(`/getUserId/${Number(id_usuario)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.mensaje || "Error al obtener usuario");
   }
 };

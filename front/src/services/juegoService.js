@@ -1,29 +1,22 @@
-// src/services/api.js
 import axios from "axios";
 
-// Crear instancia base de axios
-const api = axios.create({
-  baseURL: "http://localhost:3000/juego", // 👈 Cambiá esto si tu backend corre en otra URL
+const apiJuego = axios.create({
+  baseURL: "http://localhost:3000/juego", // backend juego
 });
 
-
-// =========================
-// Ejecutar Spin
-// =========================
+// Ejecutar spin
 export const ejecutarSpin = async (token, id_usuario, apuesta) => {
+  if (!id_usuario) throw new Error("ID de usuario no encontrado");
+  if (!token) throw new Error("Token no encontrado");
+
   try {
-    const res = await api.post(
-      "/ejecutarSpin",
-      { id_usuario, apuesta },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const res = await apiJuego.post(
+      "/spin",
+      { id_usuario: Number(id_usuario), apuesta },
+      { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
     );
     return res.data;
-  } catch (error) {
-    throw error.response?.data || { success: false, message: "Error al ejecutar el spin" };
+  } catch (err) {
+    throw new Error(err.response?.data?.mensaje || "Error al ejecutar el spin");
   }
 };
-
