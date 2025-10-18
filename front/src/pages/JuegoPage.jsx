@@ -11,6 +11,16 @@ export default function JuegoPage() {
   const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Mapa de símbolos a emojis
+  const simbolosEmojis = {
+    "Siete": "7️⃣",
+    "Campana": "🔔",
+    "Diamante": "💎",
+    "Cereza": "🍒",
+    "Limón": "🍋",
+    "Naranja": "🍊"
+  };
+
   useEffect(() => {
     const storedId = localStorage.getItem("id_usuario");
     const storedToken = localStorage.getItem("token");
@@ -20,7 +30,7 @@ export default function JuegoPage() {
 
   const handleSpin = async () => {
     if (!idUser) return setMensaje("Usuario no definido");
-    if (apuesta <= 0) return setMensaje("Ingresa una apuesta válida");
+    if (apuesta <= 0 || apuesta > 10000) return setMensaje("Ingresa una apuesta válida (1 - 10000)");
 
     setLoading(true);
     setMensaje("");
@@ -29,21 +39,20 @@ export default function JuegoPage() {
       const res = await ejecutarSpin(token, idUser, apuesta);
 
       if (res.success) {
-        // Convertir matriz plana a 2D (3 filas x 5 columnas)
-        const filas = Array.from({ length: 3 }, () => Array(5).fill(null));
-        res.matriz.forEach((item) => {
+        // Reconstruir matriz 3x5
+        const filas = [[], [], []]; // 3 filas
+        res.matriz.forEach(item => {
           filas[item.fila - 1][item.columna - 1] = item.nombre;
         });
-
         setMatriz(filas);
-        setCombinaciones(res.combinaciones);
-        setSaldo(res.saldo);
 
-        const totalGanado = res.combinaciones.reduce(
-          (acc, c) => acc + c.valor,
-          0
-        );
+        setCombinaciones(res.combinaciones || []);
 
+        // Saldo actualizado si el backend lo devuelve
+        if (res.saldo !== undefined) setSaldo(res.saldo);
+
+        // Calcular total ganado
+        const totalGanado = res.combinaciones.reduce((acc, c) => acc + c.valor, 0);
         setMensaje(
           totalGanado > 0
             ? `🎉 ¡Ganaste $${totalGanado}!`
@@ -68,20 +77,29 @@ export default function JuegoPage() {
         type="number"
         value={apuesta}
         onChange={(e) => setApuesta(Number(e.target.value))}
-        style={{ padding: "0.5rem", width: 100, marginRight: 10 }}
+        style={{ padding: "0.5rem", width: 120, marginRight: 10 }}
+        min={1}
+        max={10000}
       />
       <button onClick={handleSpin} disabled={loading}>
         {loading ? "Spineando..." : "Spinear 🎲"}
       </button>
 
-      {mensaje && <p style={{ fontWeight: "bold", marginTop: "1rem" }}>{mensaje}</p>}
+      {mensaje && (
+        <p style={{ fontWeight: "bold", marginTop: "1rem" }}>{mensaje}</p>
+      )}
 
+      {/* Mostrar matriz con emojis */}
       {matriz.length > 0 && (
         <div style={{ display: "inline-block", marginTop: 20 }}>
           {matriz.map((fila, i) => (
             <div
               key={i}
-              style={{ display: "flex", justifyContent: "center", marginBottom: 5 }}
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 5
+              }}
             >
               {fila.map((simbolo, j) => (
                 <div
@@ -92,9 +110,16 @@ export default function JuegoPage() {
                     border: "1px solid #ccc",
                     margin: "0 2px",
                     fontWeight: "bold",
+                    fontSize: "1.5rem",
+                    textAlign: "center"
                   }}
                 >
-                  {simbolo || "-"}
+                  {simbolo
+                    ? <>
+                        <div>{simbolosEmojis[simbolo] || "❔"}</div>
+                        <div style={{ fontSize: "0.8rem" }}>{simbolo}</div>
+                      </>
+                    : "-"}
                 </div>
               ))}
             </div>
@@ -102,6 +127,7 @@ export default function JuegoPage() {
         </div>
       )}
 
+      {/* Mostrar combinaciones ganadoras */}
       {combinaciones.length > 0 && (
         <div style={{ marginTop: 20 }}>
           <h3>🏆 Combinaciones ganadoras:</h3>
